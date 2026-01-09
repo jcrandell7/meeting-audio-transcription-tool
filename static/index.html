@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Transcription</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Audio Transcription</h1>
+            <p class="subtitle">Powered by WhisperX with speaker diarization</p>
+        </header>
+
+        <main>
+            <section id="upload-section" class="card">
+                <div id="drop-zone" class="drop-zone">
+                    <div class="drop-zone-content">
+                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p class="drop-text">Drag & drop an audio file here</p>
+                        <p class="drop-subtext">or click to browse</p>
+                        <p class="supported-formats">Supports: MP3, WAV, FLAC, OGG, M4A, AAC, WMA, WEBM, MP4, MKV, AVI, MOV</p>
+                    </div>
+                    <input type="file" id="file-input" accept=".mp3,.wav,.flac,.ogg,.m4a,.aac,.wma,.aiff,.webm,.mp4,.mkv,.avi,.mov" hidden>
+                </div>
+
+                <div id="file-info" class="file-info hidden">
+                    <div class="file-details">
+                        <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18V5l12-2v13"></path>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <circle cx="18" cy="16" r="3"></circle>
+                        </svg>
+                        <div>
+                            <p id="file-name" class="file-name"></p>
+                            <p id="file-size" class="file-size"></p>
+                        </div>
+                    </div>
+                    <button id="clear-file" class="btn-icon" title="Remove file">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="enable-diarization" checked>
+                        <span class="checkmark"></span>
+                        Enable speaker diarization
+                    </label>
+                </div>
+
+                <button id="transcribe-btn" class="btn btn-primary" disabled>
+                    <span class="btn-text">Transcribe</span>
+                    <span class="btn-loading hidden">
+                        <svg class="spinner" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" stroke-linecap="round"/>
+                        </svg>
+                        Processing...
+                    </span>
+                </button>
+            </section>
+
+            <section id="progress-section" class="card hidden">
+                <h2>Processing</h2>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <p id="progress-status" class="progress-status">Preparing...</p>
+            </section>
+
+            <section id="results-section" class="card hidden">
+                <h2>Transcription Results</h2>
+
+                <div id="speakers-section" class="speakers-section hidden">
+                    <h3>Speaker Names</h3>
+                    <p class="speakers-hint">Click play to hear each speaker. Give the same name to merge speakers.</p>
+                    <div id="speakers-list" class="speakers-list"></div>
+                    <button id="update-speakers-btn" class="btn btn-secondary">
+                        Update Names
+                    </button>
+                </div>
+
+                <div class="transcript-container">
+                    <div class="transcript-header">
+                        <h3>Transcript</h3>
+                        <div class="language-badge">
+                            Language: <span id="detected-language">-</span>
+                        </div>
+                    </div>
+                    <div id="transcript-content" class="transcript-content"></div>
+                </div>
+
+                <div class="download-section">
+                    <h3>Download</h3>
+                    <div class="download-buttons">
+                        <a id="download-txt" class="btn btn-download" download>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            TXT
+                        </a>
+                        <a id="download-srt" class="btn btn-download" download>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            SRT
+                        </a>
+                        <a id="download-json" class="btn btn-download" download>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            JSON
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <div id="error-toast" class="toast hidden">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span id="error-message"></span>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

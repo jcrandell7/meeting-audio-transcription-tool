@@ -1,0 +1,41 @@
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Generated/uploaded files
+uploads/
+outputs/
+clips/
+
+# Environment variables and secrets
+.env
+.env.local
+*.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Personal notes
+project-notes.txt
+
+# Model cache (large files)
+*.pt
+*.bin
+*.safetensors
+
+# Logs
+*.log
