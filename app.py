@@ -22,6 +22,7 @@ CLIPS_FOLDER.mkdir(exist_ok=True)
 ALLOWED_EXTENSIONS = {'mp3', 'wav', 'flac', 'ogg', 'oga', 'm4a', 'aac', 'wma', 'aiff', 'webm', 'mp4', 'mkv', 'avi', 'mov'}
 
 HF_TOKEN = os.environ.get('HF_TOKEN', None)
+WHISPER_MODEL = os.environ.get('WHISPER_MODEL', 'large-v3')
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 compute_type = "float16" if device == "cuda" else "int8"
@@ -33,8 +34,8 @@ diarize_model = None
 def get_model():
     global model
     if model is None:
-        print("Loading Whisper model (large-v3)...")
-        model = whisperx.load_model("large-v3", device, compute_type=compute_type)
+        print(f"Loading Whisper model ({WHISPER_MODEL})...")
+        model = whisperx.load_model(WHISPER_MODEL, device, compute_type=compute_type)
         print("Model loaded.")
     return model
 
@@ -51,10 +52,18 @@ def get_diarize_model():
                 "4) Set HF_TOKEN environment variable before starting"
             )
         print("Loading diarization model...")
-        diarize_model = DiarizationPipeline.from_pretrained(
-            "pyannote/speaker-diarization-3.1",
-            token=HF_TOKEN
-        )
+        # Try both parameter names for compatibility with different pyannote versions
+        # pyannote 3.x uses use_auth_token, 4.x uses token
+        try:
+            diarize_model = DiarizationPipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1",
+                use_auth_token=HF_TOKEN
+            )
+        except TypeError:
+            diarize_model = DiarizationPipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1",
+                token=HF_TOKEN
+            )
         diarize_model.to(torch.device(device))
         print("Diarization model loaded.")
     return diarize_model
@@ -190,8 +199,11 @@ def transcribe():
                 diarize_pipeline = get_diarize_model()
                 diarize_output = diarize_pipeline(temp_wav)
 
-                # pyannote 4.x returns DiarizeOutput, extract the Annotation
-                diarize_annotation = diarize_output.speaker_diarization
+                # pyannote 3.x returns Annotation directly, 4.x returns DiarizeOutput
+                if hasattr(diarize_output, 'speaker_diarization'):
+                    diarize_annotation = diarize_output.speaker_diarization
+                else:
+                    diarize_annotation = diarize_output
 
                 # Convert pyannote Annotation to DataFrame format whisperx expects
                 import pandas as pd
@@ -381,4 +393,4 @@ if __name__ == '__main__':
     print(f"Using device: {device}")
     print(f"Compute type: {compute_type}")
     print("Starting server on http://localhost:5000")
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)

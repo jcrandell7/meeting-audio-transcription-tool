@@ -1,5 +1,5 @@
 # Meeting Audio Transcription Tool - Docker Image
-# Supports NVIDIA GPU (auto-detected) with CPU fallback
+# For Linux with NVIDIA GPU support
 
 FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
 
@@ -25,19 +25,17 @@ WORKDIR /app
 # Upgrade pip
 RUN pip3 install --upgrade pip
 
-# Install PyTorch with CUDA support (will auto-fallback to CPU if no GPU)
+# Install PyTorch with CUDA support
 RUN pip3 install torch torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # Install Python dependencies
-# Note: pyannote.audio>=4.0.3 required for PyTorch 2.6+ compatibility
 RUN pip3 install \
     flask \
     flask-cors \
     whisperx \
-    "pyannote.audio>=4.0.3" \
+    "pyannote.audio>=3.1" \
     pandas \
-    omegaconf \
-    && find /usr/local/lib -name "*.py" -path "*/whisperx/*" -exec sed -i 's/use_auth_token/token/g' {} \;
+    omegaconf
 
 # Copy application files
 COPY app.py .
@@ -49,7 +47,7 @@ RUN mkdir -p uploads outputs clips
 # Expose port
 EXPOSE 5000
 
-# Health check
+# Health check (using python since curl may not be available)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/')" || exit 1
 

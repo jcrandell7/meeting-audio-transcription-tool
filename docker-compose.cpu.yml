@@ -1,12 +1,18 @@
+# Docker Compose for Mac, Windows, or Linux without NVIDIA GPU
+# Usage: docker compose -f docker-compose.cpu.yml up --build
+
 services:
   transcription:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
     ports:
-      - "5000:5000"
+      # Using 5001 to avoid conflict with macOS AirPlay Receiver on port 5000
+      - "5001:5000"
     environment:
       - HF_TOKEN=${HF_TOKEN}
-      - WHISPER_MODEL=${WHISPER_MODEL:-large-v3}
-      - NVIDIA_VISIBLE_DEVICES=all
+      # Use medium model by default for CPU (large-v3 requires 16GB+ RAM)
+      - WHISPER_MODEL=${WHISPER_MODEL:-medium}
     volumes:
       # Persist transcription outputs
       - ./outputs:/app/outputs
@@ -17,13 +23,6 @@ services:
       # Cache torch models
       - torch_cache:/root/.cache/torch
     restart: unless-stopped
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
 
 volumes:
   hf_cache:

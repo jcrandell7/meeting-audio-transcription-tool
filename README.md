@@ -4,9 +4,6 @@ A local web application for transcribing audio and video files with automatic sp
 
 **This branch (`docker`) contains the Dockerized version that runs on any machine.**
 
-- **Linux with NVIDIA GPU**: Full GPU acceleration (fast, ~5 min per hour of audio)
-- **Mac / Windows / Linux without GPU**: Runs on CPU (slower but works everywhere)
-
 ## Features
 
 - **Drag & Drop Interface** - Simple web UI for uploading audio/video files
@@ -18,15 +15,15 @@ A local web application for transcribing audio and video files with automatic sp
 
 ## Platform Support
 
-| Platform | Support | Notes |
-|----------|---------|-------|
-| Linux + NVIDIA GPU | Yes | GPU accelerated, ~5 min per hour of audio |
-| Mac (Apple Silicon M1/M2/M3) | Yes | Runs on CPU, ~15-30 min per hour of audio |
-| Mac (Intel) | Yes | Runs on CPU, ~30-60 min per hour of audio |
-| Linux (no GPU) | Yes | CPU mode, ~30-60 min per hour of audio |
-| Windows | Yes | Via Docker Desktop, CPU mode |
+| Platform | Docker File | Performance |
+|----------|-------------|-------------|
+| Linux + NVIDIA GPU | `docker-compose.yml` | ~5 min per hour of audio |
+| Mac (Apple Silicon) | `docker-compose.cpu.yml` | ~20-40 min per hour of audio |
+| Mac (Intel) | `docker-compose.cpu.yml` | ~30-60 min per hour of audio |
+| Windows | `docker-compose.cpu.yml` | ~30-60 min per hour of audio |
+| Linux (no GPU) | `docker-compose.cpu.yml` | ~30-60 min per hour of audio |
 
-## Quick Start (Docker)
+## Quick Start
 
 ### Prerequisites
 
@@ -61,8 +58,10 @@ HF_TOKEN=your_huggingface_token_here
 
 ### Running
 
+#### Linux with NVIDIA GPU
+
 ```bash
-# Start the application
+# Start with GPU support
 docker compose up --build
 
 # Or run in background
@@ -71,18 +70,37 @@ docker compose up --build -d
 
 Open your browser to **http://localhost:5000**
 
+#### Mac / Windows / Linux without GPU
+
+```bash
+# Start with CPU-optimized configuration
+docker compose -f docker-compose.cpu.yml up --build
+
+# Or run in background
+docker compose -f docker-compose.cpu.yml up --build -d
+```
+
+Open your browser to **http://localhost:5001** (note: port 5001, not 5000)
+
+> **Mac Users**: Port 5001 is used because macOS uses port 5000 for AirPlay Receiver.
+
 ### Stopping
 
 ```bash
 # If running in foreground, press Ctrl+C
 
-# If running in background
+# If running in background (GPU version)
 docker compose down
+
+# If running in background (CPU version)
+docker compose -f docker-compose.cpu.yml down
 ```
 
 ## Usage
 
-1. Open **http://localhost:5000** in your browser
+1. Open the web interface in your browser
+   - Linux GPU: **http://localhost:5000**
+   - Mac/Windows/CPU: **http://localhost:5001**
 2. Drag and drop an audio/video file (or click to browse)
 3. Check "Enable speaker diarization" if you want speaker detection
 4. Click **Transcribe** and wait for processing
@@ -90,41 +108,45 @@ docker compose down
 6. Click play buttons to hear each speaker, then enter their names
 7. Download your transcript in TXT, SRT, or JSON format
 
-## First Run Notes
-
-The first time you run the application, it will download the AI models:
-- **Whisper large-v3** (~3 GB) - Speech recognition
-- **pyannote models** (~100 MB) - Speaker diarization
-
-This may take 5-15 minutes depending on your internet speed. The models are cached, so subsequent starts are fast.
-
-## Performance Expectations
-
-This Docker version runs on CPU, which is slower than GPU but works everywhere:
-
-| Audio Length | Approximate Time |
-|--------------|------------------|
-| 5 minutes | 2-5 minutes |
-| 30 minutes | 10-20 minutes |
-| 1 hour | 20-40 minutes |
-| 2 hours | 40-80 minutes |
-
-*Times vary based on your CPU. Apple Silicon Macs tend to be faster than Intel.*
-
 ## Configuration
 
 ### Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `HF_TOKEN` | HuggingFace access token | For diarization |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `HF_TOKEN` | HuggingFace access token | Required for diarization |
+| `WHISPER_MODEL` | Whisper model size | `large-v3` (GPU) / `medium` (CPU) |
+
+### Available Whisper Models
+
+| Model | Size | RAM Required | Accuracy |
+|-------|------|--------------|----------|
+| `tiny` | ~75 MB | ~2 GB | Low |
+| `base` | ~150 MB | ~2 GB | Basic |
+| `small` | ~500 MB | ~3 GB | Good |
+| `medium` | ~1.5 GB | ~6 GB | Better |
+| `large-v3` | ~3 GB | ~12 GB | Best |
+
+To change the model, set `WHISPER_MODEL` in your `.env` file:
+```
+HF_TOKEN=your_token_here
+WHISPER_MODEL=medium
+```
 
 ### Persisted Data
 
-The `docker-compose.yml` automatically persists:
+Both docker-compose files automatically persist:
 - `./outputs/` - Your transcription files (TXT, SRT, JSON)
 - `./clips/` - Speaker audio samples
 - Model cache (in Docker volumes) - Avoids re-downloading
+
+## First Run Notes
+
+The first time you run the application, it will download the AI models:
+- **Whisper model** (size varies by model selected)
+- **pyannote models** (~100 MB) - Speaker diarization
+
+This may take 5-15 minutes depending on your internet speed. The models are cached, so subsequent starts are fast.
 
 ## Troubleshooting
 
@@ -142,26 +164,30 @@ You need to accept the model terms on HuggingFace:
 3. Repeat for [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
 
 ### Container won't start / Out of memory
-The models require significant RAM. Ensure Docker Desktop has at least **8GB RAM** allocated:
+The models require significant RAM. Ensure Docker Desktop has enough memory allocated:
+- **CPU mode (medium model)**: At least 8GB RAM
+- **GPU mode (large-v3 model)**: At least 12GB RAM
 - Mac/Windows: Docker Desktop → Settings → Resources → Memory
+
+### "Failed to fetch" error in browser (Mac/Windows)
+This usually means the container ran out of memory during transcription. Either:
+1. Increase Docker Desktop memory allocation
+2. Use a smaller Whisper model (set `WHISPER_MODEL=small` in `.env`)
 
 ### Transcription is very slow
 This is expected for CPU processing. Consider:
+- Using a smaller model (`WHISPER_MODEL=small` or `medium`)
 - Using shorter audio files
 - Splitting long recordings
-- For faster processing, use the [`main` branch](https://github.com/jcrandell7/meeting-audio-transcription-tool/tree/main) with an NVIDIA GPU
+- For faster processing, use Linux with an NVIDIA GPU
 
-## Native Installation (Without Docker)
-
-If you prefer running without Docker, see the [`main` branch](https://github.com/jcrandell7/meeting-audio-transcription-tool/tree/main) for native installation instructions. The native version:
-- Requires manual Python environment setup
-- Supports NVIDIA GPU acceleration (much faster)
-- Is better for Linux machines with NVIDIA GPUs
+### Port 5000 already in use (Mac)
+macOS uses port 5000 for AirPlay Receiver. The CPU compose file uses port 5001 instead. Make sure you're accessing **http://localhost:5001**
 
 ## Tech Stack
 
 - **[WhisperX](https://github.com/m-bain/whisperX)** - Fast Whisper transcription with word-level timestamps
-- **[Whisper large-v3](https://github.com/openai/whisper)** - OpenAI's speech recognition model
+- **[Whisper](https://github.com/openai/whisper)** - OpenAI's speech recognition model
 - **[pyannote-audio](https://github.com/pyannote/pyannote-audio)** - Speaker diarization
 - **[Flask](https://flask.palletsprojects.com/)** - Python web framework
 - **[ffmpeg](https://ffmpeg.org/)** - Audio/video processing
