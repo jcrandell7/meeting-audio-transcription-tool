@@ -4,7 +4,8 @@ A local web application for transcribing audio and video files with automatic sp
 
 **This branch (`docker`) contains the Dockerized version that runs on any machine.**
 
-For the native GPU-accelerated version (NVIDIA GPUs only), see the [`main` branch](https://github.com/jcrandell7/meeting-audio-transcription-tool/tree/main).
+- **Linux with NVIDIA GPU**: Full GPU acceleration (fast, ~5 min per hour of audio)
+- **Mac / Windows / Linux without GPU**: Runs on CPU (slower but works everywhere)
 
 ## Features
 
@@ -19,10 +20,11 @@ For the native GPU-accelerated version (NVIDIA GPUs only), see the [`main` branc
 
 | Platform | Support | Notes |
 |----------|---------|-------|
+| Linux + NVIDIA GPU | Yes | GPU accelerated, ~5 min per hour of audio |
 | Mac (Apple Silicon M1/M2/M3) | Yes | Runs on CPU, ~15-30 min per hour of audio |
 | Mac (Intel) | Yes | Runs on CPU, ~30-60 min per hour of audio |
-| Linux | Yes | CPU mode; for GPU see `main` branch |
-| Windows | Yes | Via Docker Desktop |
+| Linux (no GPU) | Yes | CPU mode, ~30-60 min per hour of audio |
+| Windows | Yes | Via Docker Desktop, CPU mode |
 
 ## Quick Start (Docker)
 

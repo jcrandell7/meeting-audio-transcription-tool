@@ -5,6 +5,7 @@ services:
       - "5000:5000"
     environment:
       - HF_TOKEN=${HF_TOKEN}
+      - NVIDIA_VISIBLE_DEVICES=all
     volumes:
       # Persist transcription outputs
       - ./outputs:/app/outputs
@@ -15,6 +16,14 @@ services:
       # Cache torch models
       - torch_cache:/root/.cache/torch
     restart: unless-stopped
+    # GPU support - uncomment the deploy section if you have NVIDIA GPU + nvidia-docker
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
 volumes:
   hf_cache:
