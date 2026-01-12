@@ -1,133 +1,113 @@
 # Meeting Audio Transcription Tool
 
-A local, GPU-accelerated web application for transcribing audio and video files with automatic speaker diarization. Built with WhisperX and pyannote-audio, this tool runs entirely on your own hardware for privacy and speed.
+A local web application for transcribing audio and video files with automatic speaker diarization. Built with WhisperX and pyannote-audio.
+
+**This branch (`docker`) contains the Dockerized version that runs on any machine.**
+
+For the native GPU-accelerated version (NVIDIA GPUs only), see the [`main` branch](https://github.com/jcrandell7/meeting-audio-transcription-tool/tree/main).
 
 ## Features
 
 - **Drag & Drop Interface** - Simple web UI for uploading audio/video files
-- **GPU Accelerated** - Utilizes NVIDIA GPUs for fast transcription (1 hour audio in ~5 minutes)
 - **Speaker Diarization** - Automatically detects and labels different speakers
-- **Speaker Identification** - Play audio samples of each speaker to identify them, then assign custom names
+- **Speaker Identification** - Play audio samples of each speaker, then assign custom names
 - **Speaker Merging** - Give multiple detected speakers the same name to merge them
 - **Multiple Export Formats** - Download transcripts as TXT, SRT (subtitles), or JSON
 - **Wide Format Support** - MP3, WAV, FLAC, OGG, M4A, AAC, WMA, WEBM, MP4, MKV, AVI, MOV
 
-## Requirements
+## Platform Support
 
-### Hardware
-- **NVIDIA GPU** with CUDA support (tested on RTX 4060 Ti)
-- 8GB+ VRAM recommended for large-v3 model
-- 16GB+ system RAM
+| Platform | Support | Notes |
+|----------|---------|-------|
+| Mac (Apple Silicon M1/M2/M3) | Yes | Runs on CPU, ~15-30 min per hour of audio |
+| Mac (Intel) | Yes | Runs on CPU, ~30-60 min per hour of audio |
+| Linux | Yes | CPU mode; for GPU see `main` branch |
+| Windows | Yes | Via Docker Desktop |
 
-### Software
-- Ubuntu 22.04/24.04 (or compatible Linux distribution)
-- NVIDIA drivers with CUDA support
-- Python 3.10+
-- ffmpeg
+## Quick Start (Docker)
 
-## Installation
+### Prerequisites
 
-### 1. Install System Dependencies
+1. **Docker Desktop** installed
+   - Mac: [Download Docker Desktop](https://www.docker.com/products/docker-desktop/)
+   - Windows: [Download Docker Desktop](https://www.docker.com/products/docker-desktop/)
+   - Linux: `sudo apt install docker.io docker-compose`
 
-```bash
-sudo apt update
-sudo apt install -y ffmpeg python3-venv git build-essential
-```
+2. **HuggingFace Account** (for speaker diarization)
+   - Create account at [huggingface.co](https://huggingface.co)
+   - Accept terms for these models:
+     - [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
+     - [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
+   - Create access token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
 
-### 2. Verify NVIDIA GPU
-
-```bash
-nvidia-smi
-```
-You should see your GPU listed. If not, install NVIDIA drivers first.
-
-### 3. Clone the Repository
+### Installation
 
 ```bash
-git clone https://github.com/jcrandell7/meeting-audio-transcription-tool.git
+# Clone the repository (docker branch)
+git clone -b docker https://github.com/jcrandell7/meeting-audio-transcription-tool.git
 cd meeting-audio-transcription-tool
+
+# Create your .env file with your HuggingFace token
+cp .env.example .env
+# Edit .env and add your token
 ```
 
-### 4. Create Virtual Environment
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
+Edit the `.env` file:
+```
+HF_TOKEN=your_huggingface_token_here
 ```
 
-### 5. Install PyTorch with CUDA
+### Running
 
 ```bash
-pip install --upgrade pip
+# Start the application
+docker compose up --build
 
-# For CUDA 12.x (most recent NVIDIA drivers)
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# Or run in background
+docker compose up --build -d
 ```
 
-Verify GPU access:
-```bash
-python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
-```
+Open your browser to **http://localhost:5000**
 
-### 6. Install Python Dependencies
+### Stopping
 
 ```bash
-pip install whisperx flask flask-cors pyannote.audio
-```
+# If running in foreground, press Ctrl+C
 
-### 7. Set Up HuggingFace Token (Required for Speaker Diarization)
-
-Speaker diarization uses gated models that require a HuggingFace account:
-
-1. Create an account at [huggingface.co](https://huggingface.co)
-2. Accept the terms for these models:
-   - [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
-   - [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
-3. Create an access token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
-4. Set the environment variable:
-   ```bash
-   export HF_TOKEN=your_token_here
-   ```
-
-**Tip:** Add this to your `~/.bashrc` to make it permanent:
-```bash
-echo 'export HF_TOKEN=your_token_here' >> ~/.bashrc
-```
-
-### 8. Create Required Directories
-
-```bash
-mkdir -p uploads outputs clips
+# If running in background
+docker compose down
 ```
 
 ## Usage
 
-### Starting the Server
-
-```bash
-# Make sure you're in the project directory with venv activated
-source venv/bin/activate
-export HF_TOKEN=your_token_here  # if not already set
-
-# Run the startup script
-./start.sh
-```
-
-Or run directly:
-```bash
-python app.py
-```
-
-### Using the Application
-
-1. Open your browser to **http://localhost:5000**
+1. Open **http://localhost:5000** in your browser
 2. Drag and drop an audio/video file (or click to browse)
 3. Check "Enable speaker diarization" if you want speaker detection
-4. Click **Transcribe**
-5. Wait for processing (progress bar shows status)
-6. Review the transcript with speaker labels
-7. **Optional:** Click play buttons to hear each speaker, then enter names
-8. Download your transcript in TXT, SRT, or JSON format
+4. Click **Transcribe** and wait for processing
+5. Review the transcript with speaker labels
+6. Click play buttons to hear each speaker, then enter their names
+7. Download your transcript in TXT, SRT, or JSON format
+
+## First Run Notes
+
+The first time you run the application, it will download the AI models:
+- **Whisper large-v3** (~3 GB) - Speech recognition
+- **pyannote models** (~100 MB) - Speaker diarization
+
+This may take 5-15 minutes depending on your internet speed. The models are cached, so subsequent starts are fast.
+
+## Performance Expectations
+
+This Docker version runs on CPU, which is slower than GPU but works everywhere:
+
+| Audio Length | Approximate Time |
+|--------------|------------------|
+| 5 minutes | 2-5 minutes |
+| 30 minutes | 10-20 minutes |
+| 1 hour | 20-40 minutes |
+| 2 hours | 40-80 minutes |
+
+*Times vary based on your CPU. Apple Silicon Macs tend to be faster than Intel.*
 
 ## Configuration
 
@@ -135,41 +115,46 @@ python app.py
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `HF_TOKEN` | HuggingFace access token for diarization models | For diarization |
-| `HF_HUB_OFFLINE` | Set to `1` to run offline (after models are cached) | No |
-| `TRANSFORMERS_OFFLINE` | Set to `1` to run offline | No |
+| `HF_TOKEN` | HuggingFace access token | For diarization |
 
-### Running Offline
+### Persisted Data
 
-After the first run (which downloads and caches the models), you can run offline by uncommenting these lines in `start.sh`:
-
-```bash
-export HF_HUB_OFFLINE=1
-export TRANSFORMERS_OFFLINE=1
-```
+The `docker-compose.yml` automatically persists:
+- `./outputs/` - Your transcription files (TXT, SRT, JSON)
+- `./clips/` - Speaker audio samples
+- Model cache (in Docker volumes) - Avoids re-downloading
 
 ## Troubleshooting
 
-### "CUDA not available"
-- Ensure NVIDIA drivers are installed: `nvidia-smi`
-- Reinstall PyTorch with CUDA support
-- Check that your GPU has enough VRAM
-
-### "Unable to load libcudnn_cnn.so.9"
-The `start.sh` script sets the correct `LD_LIBRARY_PATH`. If running directly with `python app.py`, you may need to set it manually:
+### "Error: HF_TOKEN not set"
+Make sure you created the `.env` file with your HuggingFace token:
 ```bash
-export LD_LIBRARY_PATH="./venv/lib/python3.12/site-packages/nvidia/cudnn/lib:$LD_LIBRARY_PATH"
+cp .env.example .env
+# Edit .env and add: HF_TOKEN=your_token_here
 ```
 
 ### "403 Forbidden" for HuggingFace models
-- Make sure you've accepted the terms for all required models on HuggingFace
-- Verify your token has read access
-- Check that `HF_TOKEN` is exported correctly
+You need to accept the model terms on HuggingFace:
+1. Go to [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
+2. Click "Agree and access repository"
+3. Repeat for [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
 
-### Diarization shows wrong number of speakers
-Speaker diarization is not perfect. You can:
-- Merge speakers by giving them the same name
-- The algorithm may split one person into multiple speakers if their voice changes significantly
+### Container won't start / Out of memory
+The models require significant RAM. Ensure Docker Desktop has at least **8GB RAM** allocated:
+- Mac/Windows: Docker Desktop → Settings → Resources → Memory
+
+### Transcription is very slow
+This is expected for CPU processing. Consider:
+- Using shorter audio files
+- Splitting long recordings
+- For faster processing, use the [`main` branch](https://github.com/jcrandell7/meeting-audio-transcription-tool/tree/main) with an NVIDIA GPU
+
+## Native Installation (Without Docker)
+
+If you prefer running without Docker, see the [`main` branch](https://github.com/jcrandell7/meeting-audio-transcription-tool/tree/main) for native installation instructions. The native version:
+- Requires manual Python environment setup
+- Supports NVIDIA GPU acceleration (much faster)
+- Is better for Linux machines with NVIDIA GPUs
 
 ## Tech Stack
 
@@ -182,9 +167,3 @@ Speaker diarization is not perfect. You can:
 ## License
 
 MIT License - feel free to use and modify for your own purposes.
-
-## Acknowledgments
-
-- OpenAI for the Whisper model
-- The WhisperX team for the enhanced pipeline
-- The pyannote team for speaker diarization

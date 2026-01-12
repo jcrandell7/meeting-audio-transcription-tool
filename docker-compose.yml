@@ -1,0 +1,21 @@
+services:
+  transcription:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      # Persist transcription outputs
+      - ./outputs:/app/outputs
+      # Persist speaker audio clips
+      - ./clips:/app/clips
+      # Cache HuggingFace models (saves re-downloading)
+      - hf_cache:/root/.cache/huggingface
+      # Cache torch models
+      - torch_cache:/root/.cache/torch
+    restart: unless-stopped
+
+volumes:
+  hf_cache:
+  torch_cache:
